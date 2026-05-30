@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador IR 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #0d0d0d;
+  --bg2:       #141414;
+  --bg3:       #1c1c1c;
+  --border:    #2e2e2e;
+  --border2:   #3a3a3a;
+  --text:      #f5f3ee;
+  --muted:     #c8c4bc;
+  --muted2:    #9a9690;
+  --accent:    #a3e635;
+  --accent3:   rgba(163,230,53,.07);
+  --green:     #4ade80;
+  --green-bg:  rgba(74,222,128,.09);
+  --green-bd:  rgba(74,222,128,.25);
+  --red:       #f87171;
+  --red-bg:    rgba(248,113,113,.09);
+  --red-bd:    rgba(248,113,113,.25);
+  --amber:     #fbbf24;
+  --mono:      'JetBrains Mono', monospace;
+  --r:         7px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px}
+body{
+  font-family:var(--mono);
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  padding:2rem 1rem 4rem;
+  line-height:1.65;
+}
+.page{max-width:900px;margin:0 auto}
+
+header{margin-bottom:2.5rem}
+.h-tag{font-size:13px;color:var(--muted);margin-bottom:.4rem;letter-spacing:.04em}
+h1{font-size:22px;font-weight:500;color:var(--text);letter-spacing:-.01em;margin-bottom:.3rem}
+.h-by{font-size:14px;color:var(--accent);margin-bottom:.2rem}
+.h-sub{font-size:14px;color:var(--muted)}
+
+.section-tag{
+  font-size:13px;color:var(--muted);letter-spacing:.05em;
+  margin-bottom:.85rem;display:flex;align-items:center;gap:8px
+}
+.section-tag::before{content:'//';color:var(--muted2)}
+
+.grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:1px;
+  background:var(--border);border:1px solid var(--border);
+  border-radius:var(--r);overflow:hidden;margin-bottom:1rem
+}
+.col{background:var(--bg2);padding:1.4rem}
+
+.field{margin-bottom:.9rem}
+.field:last-child{margin-bottom:0}
+.field label{
+  display:flex;justify-content:space-between;align-items:baseline;
+  font-size:13px;color:var(--muted);margin-bottom:6px;
+}
+.field label .lim{color:var(--muted2);font-size:12px}
+.field label .lim.warn{color:var(--amber)}
+.field input{
+  width:100%;padding:10px 12px;
+  font-size:15px;font-family:var(--mono);
+  background:var(--bg3);border:1px solid var(--border2);
+  border-radius:var(--r);color:var(--text);
+  transition:border-color .15s,box-shadow .15s;
+  -webkit-appearance:none;appearance:none;
+}
+.field input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(163,230,53,.15)}
+.field input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+.hint{font-size:12px;color:var(--muted2);margin-top:4px}
+
+/* PGBL boxes */
+.pgbl-box{
+  margin-top:.85rem;padding:.85rem;
+  background:rgba(163,230,53,.07);
+  border:1px solid rgba(163,230,53,.18);
+  border-radius:var(--r);display:none;
+}
+.pgbl-box.show{display:block}
+.pgbl-box .pb-label{font-size:12px;color:var(--muted);margin-bottom:3px}
+.pgbl-box .pb-val{font-size:18px;font-weight:500;color:var(--accent)}
+
+.pgbl-economia{
+  margin-top:.85rem;padding:.85rem;
+  background:var(--green-bg);border:1px solid var(--green-bd);
+  border-radius:var(--r);display:none;
+}
+.pgbl-economia.show{display:block}
+.pgbl-economia .pe-label{font-size:12px;color:var(--muted);margin-bottom:3px}
+.pgbl-economia .pe-val{font-size:20px;font-weight:600;color:var(--green);letter-spacing:-.01em}
+.pgbl-economia .pe-sub{font-size:12px;color:var(--muted);margin-top:5px}
+
+/* resultado */
+.result-wrap{display:none;margin-top:.5rem}
+.result-wrap.show{display:block}
+
+/* economia PGBL destaque */
+.pgbl-result{
+  padding:1rem 1.2rem;background:var(--green-bg);
+  border:1px solid var(--green-bd);border-radius:var(--r);
+  margin-bottom:1px;display:none
+}
+.pgbl-result.show{display:block}
+.pgbl-result .pr-top{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:.5rem}
+.pgbl-result .pr-title{font-size:13px;color:var(--muted);letter-spacing:.03em}
+.pgbl-result .pr-val{font-size:22px;font-weight:600;color:var(--green)}
+.pgbl-result .pr-sub{font-size:13px;color:var(--muted);margin-top:5px}
+
+/* verdict */
+.verdict{
+  padding:1rem 1.2rem;border-radius:var(--r);
+  font-size:15px;font-weight:500;
+  display:flex;align-items:center;gap:8px;
+  margin-bottom:1px;
+}
+.verdict.rest{background:var(--green-bg);border:1px solid var(--green-bd);color:var(--green)}
+.verdict.pag {background:var(--red-bg);  border:1px solid var(--red-bd); color:var(--red)}
+.verdict.zer {background:var(--bg2);     border:1px solid var(--border); color:var(--muted)}
+
+/* métricas */
+.metrics{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+  background:var(--border);border:1px solid var(--border);
+  border-radius:var(--r);overflow:hidden;margin-bottom:1rem
+}
+.metric{background:var(--bg2);padding:1rem}
+.metric .m-lbl{font-size:12px;color:var(--muted);margin-bottom:5px}
+.metric .m-val{font-size:18px;font-weight:500;color:var(--text);letter-spacing:-.01em}
+
+/* tabela comparação */
+.cmp-table{
+  width:100%;border-collapse:collapse;
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--r);overflow:hidden;margin-bottom:1rem
+}
+.cmp-table thead tr{background:var(--bg3)}
+.cmp-table th{
+  font-size:13px;letter-spacing:.03em;color:var(--muted);
+  padding:11px 16px;text-align:right;border-bottom:1px solid var(--border);font-weight:400;
+}
+.cmp-table th:first-child{text-align:left}
+.cmp-table td{
+  padding:10px 16px;font-size:14px;text-align:right;
+  border-bottom:1px solid var(--border);color:var(--muted);
+  font-family:var(--mono);
+}
+.cmp-table td:first-child{text-align:left;color:var(--text);font-size:14px}
+.cmp-table tr:last-child td{border-bottom:none}
+.cmp-table tr.sub-row td{background:var(--bg3);font-size:13px;color:var(--muted2)}
+.cmp-table tr.sub-row td:first-child{padding-left:28px;font-size:12px;color:var(--muted)}
+.cmp-table tr.total-row td{
+  background:var(--bg);font-weight:500;font-size:14px;
+  border-top:1px solid var(--border2);
+}
+.cmp-table .best-col{position:relative}
+.cmp-table .best-col::after{
+  content:'melhor';font-family:var(--mono);font-size:10px;font-weight:500;
+  letter-spacing:.05em;background:var(--accent);color:#000;
+  padding:2px 8px;border-radius:999px;margin-left:8px;vertical-align:middle;
+}
+.positive{color:var(--green) !important}
+.negative{color:var(--red) !important}
+
+/* tabela referência */
+.ref-toggle{
+  width:100%;background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--r);padding:11px 16px;font-size:13px;font-family:var(--mono);
+  color:var(--muted);cursor:pointer;text-align:left;
+  display:flex;justify-content:space-between;align-items:center;
+  margin-top:1rem;transition:background .15s;
+}
+.ref-toggle:hover{background:var(--bg3)}
+.ref-box{display:none;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:1px}
+.ref-box.open{display:block}
+.ref-box table{width:100%;border-collapse:collapse}
+.ref-box th{
+  background:var(--bg3);padding:9px 16px;text-align:left;
+  font-size:12px;letter-spacing:.06em;color:var(--muted2);
+  border-bottom:1px solid var(--border);font-weight:400
+}
+.ref-box td{padding:9px 16px;border-bottom:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:13px}
+.ref-box td:last-child{text-align:right;color:var(--text)}
+.ref-box tr:last-child td{border-bottom:none}
+
+footer{font-size:12px;color:var(--muted2);text-align:center;margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--border)}
+
+@media(max-width:620px){
+  .grid{grid-template-columns:1fr}
+  .metrics{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <div class="h-tag">// simulador · declaração irpf</div>
+  <h1>Restituição de Imposto de Renda 2026</h1>
+  <p class="h-by">by Geraldo Búrigo, CNPI</p>
+  <p class="h-sub">ano-base 2025 · tabela irpf vigente · valores anuais</p>
+</header>
+
+<div class="section-tag">rendimentos &amp; retenções</div>
+<div class="grid">
+  <div class="col">
+    <div class="field">
+      <label>rendimentos tributáveis <span class="lim">anual</span></label>
+      <input type="text" id="renda" placeholder="0,00" oninput="onInput(this,'renda');calc()">
+      <div class="hint">salários, aluguéis, pró-labore etc. — exceto 13º e PLR</div>
+    </div>
+    <div class="field">
+      <label>ir retido na fonte <span class="lim">anual</span></label>
+      <input type="text" id="irFonte" placeholder="0,00" oninput="onInput(this,'irFonte');calc()">
+      <div class="hint">total descontado em folha ao longo de 2025</div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="field">
+      <label>contribuição inss <span class="lim">anual</span></label>
+      <input type="text" id="inss" placeholder="0,00" oninput="onInput(this,'inss');calc()">
+    </div>
+    <div class="field">
+      <label>dependentes <span class="lim">R$ 2.275,08 cada</span></label>
+      <input type="number" id="deps" placeholder="0" min="0" oninput="calc()">
+    </div>
+    <div class="field">
+      <label>pensão alimentícia <span class="lim">judicial/escritura</span></label>
+      <input type="text" id="pensao" placeholder="0,00" oninput="onInput(this,'pensao');calc()">
+    </div>
+  </div>
+</div>
+
+<div class="section-tag">saúde &amp; educação</div>
+<div class="grid">
+  <div class="col">
+    <div class="field">
+      <label>despesas médicas <span class="lim">sem limite</span></label>
+      <input type="text" id="saude" placeholder="0,00" oninput="onInput(this,'saude');calc()">
+      <div class="hint">consultas · plano · exames · internação · próteses · odonto</div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="field">
+      <label>despesas com instrução <span class="lim" id="edu-lim-lbl">lim. R$ 3.561,50/pessoa</span></label>
+      <input type="text" id="educacao" placeholder="0,00" oninput="onInput(this,'educacao');calc()">
+      <div class="hint">fundamental, médio, técnico, superior, pós-graduação</div>
+    </div>
+    <div class="field" style="margin-top:.75rem">
+      <label>pessoas com despesa de instrução <span class="lim">titular + deps</span></label>
+      <input type="number" id="eduPessoas" placeholder="1" min="1" value="1" oninput="calc()">
+    </div>
+  </div>
+</div>
+
+<div class="section-tag">previdência privada — pgbl</div>
+<div class="grid" style="margin-bottom:1.5rem">
+  <div class="col">
+    <div class="field">
+      <label>contribuição pgbl <span class="lim" id="pgbl-lim-lbl">informe a renda primeiro</span></label>
+      <input type="text" id="pgbl" placeholder="0,00" oninput="onInput(this,'pgbl');calc()">
+      <div class="hint">apenas pgbl deduz na base · vgbl não deduz</div>
+    </div>
+    <div class="pgbl-box" id="pgbl-box">
+      <div class="pb-label">// limite máximo pgbl (12% da renda tributável)</div>
+      <div class="pb-val" id="pgbl-limite-val">—</div>
+    </div>
+    <div class="pgbl-economia" id="pgbl-eco">
+      <div class="pe-label">// economia de ir somente com o pgbl</div>
+      <div class="pe-val" id="pgbl-eco-val">—</div>
+      <div class="pe-sub" id="pgbl-eco-sub">—</div>
+    </div>
+  </div>
+  <div class="col" style="display:flex;align-items:center">
+    <div style="font-size:14px;color:var(--muted);line-height:1.75;max-width:260px">
+      <div style="color:var(--accent);font-size:12px;letter-spacing:.05em;margin-bottom:.6rem">// como o pgbl reduz seu ir</div>
+      o valor aportado no pgbl é abatido da base de cálculo antes das alíquotas — gerando redução direta no imposto devido.
+      <div style="margin-top:.75rem;color:var(--muted2);font-size:13px">limite: 12% dos rendimentos tributáveis anuais.</div>
+    </div>
+  </div>
+</div>
+
+<!-- resultado -->
+<div class="result-wrap" id="resultado">
+
+  <div class="section-tag">resultado da simulação</div>
+
+  <div class="pgbl-result" id="pgbl-result">
+    <div class="pr-top">
+      <span class="pr-title">// economia de ir com pgbl</span>
+      <span class="pr-val" id="pr-val">—</span>
+    </div>
+    <div class="pr-sub" id="pr-sub">—</div>
+  </div>
+
+  <div id="verdict" class="verdict zer">—</div>
+
+  <div class="metrics" style="margin-top:1px">
+    <div class="metric">
+      <div class="m-lbl">restituição / saldo</div>
+      <div class="m-val" id="m-rest">—</div>
+    </div>
+    <div class="metric">
+      <div class="m-lbl">alíquota efetiva</div>
+      <div class="m-val" id="m-aliq">—</div>
+    </div>
+    <div class="metric">
+      <div class="m-lbl">imposto devido</div>
+      <div class="m-val" id="m-devido">—</div>
+    </div>
+    <div class="metric">
+      <div class="m-lbl">modelo escolhido</div>
+      <div class="m-val" id="m-modelo" style="font-size:14px">—</div>
+    </div>
+  </div>
+
+  <div class="section-tag" style="margin-top:1.5rem">completa vs simplificada — detalhamento</div>
+  <table class="cmp-table">
+    <thead>
+      <tr>
+        <th>item</th>
+        <th id="th-c">declaração completa</th>
+        <th id="th-s">declaração simplificada</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>rendimentos tributáveis</td><td id="c-renda">—</td><td id="s-renda">—</td></tr>
+      <tr class="sub-row"><td>(-) inss</td><td id="c-inss">—</td><td>—</td></tr>
+      <tr class="sub-row"><td>(-) dependentes</td><td id="c-deps">—</td><td>—</td></tr>
+      <tr class="sub-row"><td>(-) pensão alimentícia</td><td id="c-pensao">—</td><td>—</td></tr>
+      <tr class="sub-row"><td>(-) despesas médicas</td><td id="c-saude">—</td><td>—</td></tr>
+      <tr class="sub-row"><td>(-) instrução</td><td id="c-edu">—</td><td>—</td></tr>
+      <tr class="sub-row"><td>(-) pgbl</td><td id="c-pgbl">—</td><td>—</td></tr>
+      <tr class="sub-row" style="background:rgba(163,230,53,.05)"><td style="color:var(--accent)">(-) desconto simplificado</td><td style="color:var(--muted2)">n/a</td><td id="s-simpl">—</td></tr>
+      <tr class="total-row"><td>total de deduções</td><td id="c-ded">—</td><td id="s-ded">—</td></tr>
+      <tr class="total-row"><td>base de cálculo</td><td id="c-base">—</td><td id="s-base">—</td></tr>
+      <tr class="total-row"><td>imposto devido</td><td id="c-devido">—</td><td id="s-devido">—</td></tr>
+      <tr class="total-row"><td>ir retido na fonte</td><td id="c-fonte">—</td><td id="s-fonte">—</td></tr>
+      <tr class="total-row"><td>a restituir / a pagar</td><td id="c-result">—</td><td id="s-result">—</td></tr>
+    </tbody>
+  </table>
+
+</div>
+
+<button class="ref-toggle" onclick="toggleRef()">
+  <span>// tabela irpf 2026 · faixas, alíquotas e limites de dedução</span>
+  <span id="ref-arr">▾</span>
+</button>
+<div class="ref-box" id="ref-box">
+  <table>
+    <thead><tr><th>base de cálculo anual</th><th>alíquota</th><th>parcela a deduzir</th></tr></thead>
+    <tbody>
+      <tr><td>até R$ 22.847,76</td><td>isento</td><td>—</td></tr>
+      <tr><td>R$ 22.847,77 a R$ 33.919,80</td><td>7,5%</td><td>R$ 1.713,58</td></tr>
+      <tr><td>R$ 33.919,81 a R$ 45.012,60</td><td>15%</td><td>R$ 4.257,57</td></tr>
+      <tr><td>R$ 45.012,61 a R$ 55.976,16</td><td>22,5%</td><td>R$ 7.633,51</td></tr>
+      <tr><td>acima de R$ 55.976,16</td><td>27,5%</td><td>R$ 10.432,32</td></tr>
+    </tbody>
+  </table>
+  <table>
+    <thead><tr><th colspan="2">limites de dedução — declaração completa</th></tr></thead>
+    <tbody>
+      <tr><td>por dependente</td><td>R$ 2.275,08</td></tr>
+      <tr><td>instrução (por pessoa)</td><td>R$ 3.561,50</td></tr>
+      <tr><td>saúde</td><td>sem limite</td></tr>
+      <tr><td>pgbl</td><td>12% dos rendimentos tributáveis</td></tr>
+      <tr><td>desconto simplificado</td><td>R$ 16.754,34</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<footer>simulação indicativa · não substitui orientação de contador · geraldo búrigo · cnpi</footer>
+</div>
+
+<script>
+const FAIXAS=[
+  {ate:22847.76, aliq:0,    ded:0},
+  {ate:33919.80, aliq:.075, ded:1713.58},
+  {ate:45012.60, aliq:.15,  ded:4257.57},
+  {ate:55976.16, aliq:.225, ded:7633.51},
+  {ate:Infinity, aliq:.275, ded:10432.32}
+];
+const DED_DEP=2275.08, LIM_EDU=3561.50, DESC_SIMPLES=16754.34;
+const raw={};
+
+function onInput(el,id){
+  const digits=el.value.replace(/\D/g,'');
+  const num=parseInt(digits||'0',10)/100;
+  raw[id]=num;
+  el.value=num===0?'':num.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function getVal(id){return raw[id]||0}
+
+function brl(v){
+  if(v===null||v===undefined||isNaN(v))return'—';
+  const neg=v<0;
+  const s='R$ '+Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  return neg?'-'+s:s;
+}
+
+function calcIR(base){
+  if(base<=0)return 0;
+  for(const f of FAIXAS){if(base<=f.ate)return Math.max(0,base*f.aliq-f.ded)}
+  return 0;
+}
+
+function setTd(id,v,colored){
+  const el=document.getElementById(id);if(!el)return;
+  if(colored){
+    if(v<0)      el.innerHTML=`<span class="negative">${brl(v)}</span>`;
+    else if(v>0) el.innerHTML=`<span class="positive">${brl(v)}</span>`;
+    else         el.textContent=brl(v);
+  }else{el.textContent=brl(v)}
+}
+
+function calc(){
+  const renda    =getVal('renda');
+  const irFonte  =getVal('irFonte');
+  const inss     =getVal('inss');
+  const deps     =parseInt(document.getElementById('deps').value)||0;
+  const pensao   =getVal('pensao');
+  const saude    =getVal('saude');
+  const eduBruto =getVal('educacao');
+  const eduPess  =parseInt(document.getElementById('eduPessoas').value)||1;
+  const pgblBruto=getVal('pgbl');
+
+  const limPGBL=renda*0.12;
+  const pgblBox=document.getElementById('pgbl-box');
+  const pgblLimLbl=document.getElementById('pgbl-lim-lbl');
+
+  if(renda>0){
+    pgblBox.classList.add('show');
+    document.getElementById('pgbl-limite-val').textContent=brl(limPGBL);
+    pgblLimLbl.textContent=`lim. ${brl(limPGBL)} (12%)`;
+  }else{
+    pgblBox.classList.remove('show');
+    pgblLimLbl.textContent='informe a renda primeiro';
+  }
+
+  const limEdu=LIM_EDU*eduPess;
+  const eduLimLbl=document.getElementById('edu-lim-lbl');
+  eduLimLbl.textContent=`lim. ${brl(limEdu)}`;
+  eduLimLbl.className='lim'+(eduBruto>limEdu?' warn':'');
+
+  if(renda<=0){
+    document.getElementById('resultado').classList.remove('show');
+    document.getElementById('pgbl-eco').classList.remove('show');
+    return;
+  }
+
+  const pgbl    =Math.min(pgblBruto,limPGBL);
+  const edu     =Math.min(eduBruto,limEdu);
+
+  const dedInss  =inss;
+  const dedDeps  =deps*DED_DEP;
+  const dedPensao=pensao;
+  const dedSaude =saude;
+  const dedEdu   =edu;
+  const dedPGBL  =pgbl;
+  const dedC     =dedInss+dedDeps+dedPensao+dedSaude+dedEdu+dedPGBL;
+  const dedS     =Math.min(DESC_SIMPLES,renda*0.20);
+
+  const baseC=Math.max(0,renda-dedC);
+  const baseS=Math.max(0,renda-dedS);
+  const devidoC=calcIR(baseC);
+  const devidoS=calcIR(baseS);
+  const resultC=irFonte-devidoC;
+  const resultS=irFonte-devidoS;
+
+  // economia PGBL
+  const baseCSemPGBL=Math.max(0,renda-dedC+dedPGBL);
+  const devidoCSemPGBL=calcIR(baseCSemPGBL);
+  const economiaPGBL=devidoCSemPGBL-devidoC;
+
+  const ecoEl=document.getElementById('pgbl-eco');
+  if(pgbl>0&&economiaPGBL>0){
+    ecoEl.classList.add('show');
+    document.getElementById('pgbl-eco-val').textContent=brl(economiaPGBL);
+    document.getElementById('pgbl-eco-sub').textContent=
+      `aportando ${brl(pgbl)} no pgbl → redução de ${brl(economiaPGBL)} no ir`;
+  }else{ecoEl.classList.remove('show')}
+
+  const melhorC  =resultC>=resultS;
+  const melhorVal=melhorC?resultC:resultS;
+  const melhorDev=melhorC?devidoC:devidoS;
+  const aliqEf   =renda>0?(melhorDev/renda*100):0;
+
+  document.getElementById('resultado').classList.add('show');
+
+  // economia PGBL no resultado
+  const prEl=document.getElementById('pgbl-result');
+  if(pgbl>0&&economiaPGBL>0){
+    prEl.classList.add('show');
+    document.getElementById('pr-val').textContent=brl(economiaPGBL);
+    document.getElementById('pr-sub').textContent=
+      `aporte pgbl de ${brl(pgbl)} → redução de ${brl(economiaPGBL)} no ir devido · equivale a `+
+      `${((economiaPGBL/pgbl)*100).toFixed(1).replace('.',',')}% de retorno imediato sobre o aporte`;
+  }else{prEl.classList.remove('show')}
+
+  // verdict
+  const vd=document.getElementById('verdict');
+  if(melhorVal>0){
+    vd.className='verdict rest';
+    vd.textContent=`a restituir: ${brl(melhorVal)} · modelo ${melhorC?'completa':'simplificada'}`;
+  }else if(melhorVal<0){
+    vd.className='verdict pag';
+    vd.textContent=`imposto a pagar: ${brl(Math.abs(melhorVal))} · modelo ${melhorC?'completa':'simplificada'}`;
+  }else{
+    vd.className='verdict zer';
+    vd.textContent='sem restituição nem imposto a pagar';
+  }
+
+  // métricas
+  const mr=document.getElementById('m-rest');
+  mr.textContent=brl(Math.abs(melhorVal));
+  mr.style.color=melhorVal>0?'var(--green)':melhorVal<0?'var(--red)':'var(--text)';
+  document.getElementById('m-aliq').textContent=aliqEf.toFixed(2).replace('.',',')+' %';
+  document.getElementById('m-devido').textContent=brl(melhorDev);
+  document.getElementById('m-modelo').textContent=melhorC?'completa':'simplificada';
+
+  // tabela
+  document.getElementById('th-c').className=melhorC?'best-col':'';
+  document.getElementById('th-s').className=!melhorC?'best-col':'';
+
+  setTd('c-renda', renda); setTd('s-renda', renda);
+  setTd('c-inss',  dedInss);
+  setTd('c-deps',  dedDeps);
+  setTd('c-pensao',dedPensao);
+  setTd('c-saude', dedSaude);
+  setTd('c-edu',   dedEdu);
+  setTd('c-pgbl',  dedPGBL);
+  setTd('s-simpl', dedS);
+  setTd('c-ded',   dedC);   setTd('s-ded',   dedS);
+  setTd('c-base',  baseC);  setTd('s-base',  baseS);
+  setTd('c-devido',devidoC);setTd('s-devido',devidoS);
+  setTd('c-fonte', irFonte);setTd('s-fonte', irFonte);
+  setTd('c-result',resultC,true);setTd('s-result',resultS,true);
+}
+
+function toggleRef(){
+  const b=document.getElementById('ref-box');
+  const a=document.getElementById('ref-arr');
+  b.classList.toggle('open');
+  a.textContent=b.classList.contains('open')?'▴':'▾';
+}
+</script>
+</body>
+</html>
